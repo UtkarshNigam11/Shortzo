@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiPlay, FiUsers, FiTrendingUp, FiUpload } from 'react-icons/fi';
 import ReelsFeed from '../components/Reels/ReelsFeed';
-import CategoriesList from '../components/Categories/CategoriesList';
 
 const Home = () => {
   const { user } = useAuth();
@@ -65,36 +64,10 @@ const Home = () => {
       )}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar - Categories */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Categories
-              </h2>
-              <CategoriesList />
-              
-              {user && (
-                <div className="mt-8 p-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white">
-                  <h3 className="font-semibold mb-2">Share Your Story</h3>
-                  <p className="text-sm mb-4 text-indigo-100">
-                    Upload your first reel and start building your audience!
-                  </p>
-                  <Link
-                    to="/upload"
-                    className="bg-white text-indigo-600 hover:bg-gray-100 font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center text-sm"
-                  >
-                    <FiUpload className="mr-2 h-4 w-4" />
-                    Upload Reel
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto">
           {/* Main Feed */}
-          <div className="lg:col-span-3">
+          <div className="w-full">
             {user ? (
               <>
                 <div className="flex items-center justify-between mb-6">
@@ -109,75 +82,75 @@ const Home = () => {
                 <ReelsFeed />
               </>
             ) : (
-              <>
-                {/* Features Section */}
-                <section className="py-16">
-                  <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                      Why Choose Shortzo?
-                    </h2>
-                    <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                      Experience the next generation of short video sharing with powerful features
-                      designed for creators and viewers alike.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="text-center p-6 rounded-lg bg-white dark:bg-gray-800 shadow-md">
-                      <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                        <FiPlay className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-                        Diverse Content
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Explore content across 14+ categories including Entertainment, Education, Music, Dance, and more.
+                <>
+                  {/* Features Section */}
+                  <section className="py-16">
+                    <div className="text-center mb-12">
+                      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                        Why Choose Shortzo?
+                      </h2>
+                      <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                        Experience the next generation of short video sharing with powerful features
+                        designed for creators and viewers alike.
                       </p>
                     </div>
 
-                    <div className="text-center p-6 rounded-lg bg-white dark:bg-gray-800 shadow-md">
-                      <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                        <FiUsers className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      <div className="text-center p-6 rounded-lg bg-white dark:bg-gray-800 shadow-md">
+                        <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                          <FiPlay className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+                          Diverse Content
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          Explore content across 14+ categories including Entertainment, Education, Music, Dance, and more.
+                        </p>
                       </div>
-                      <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-                        Community Driven
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Connect with like-minded creators and viewers. Build your following and engage with content you love.
-                      </p>
-                    </div>
 
-                    <div className="text-center p-6 rounded-lg bg-white dark:bg-gray-800 shadow-md">
-                      <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                        <FiTrendingUp className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+                      <div className="text-center p-6 rounded-lg bg-white dark:bg-gray-800 shadow-md">
+                        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                          <FiUsers className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+                          Community Driven
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          Connect with like-minded creators and viewers. Build your following and engage with content you love.
+                        </p>
                       </div>
-                      <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-                        Smart Discovery
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Advanced tagging and personalized recommendations help you discover content tailored to your interests.
-                      </p>
-                    </div>
-                  </div>
-                </section>
 
-                {/* Trending Reels Preview */}
-                <section>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      Trending Now
-                    </h2>
-                    <Link
-                      to="/explore"
-                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
-                    >
-                      View All
-                    </Link>
-                  </div>
-                  <ReelsFeed showTrending={true} limit={6} />
-                </section>
-              </>
-            )}
+                      <div className="text-center p-6 rounded-lg bg-white dark:bg-gray-800 shadow-md">
+                        <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                          <FiTrendingUp className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+                          Smart Discovery
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          Advanced tagging and personalized recommendations help you discover content tailored to your interests.
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Trending Reels Preview */}
+                  <section>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        Trending Now
+                      </h2>
+                      <Link
+                        to="/explore"
+                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
+                      >
+                        View All
+                      </Link>
+                    </div>
+                    <ReelsFeed showTrending={true} limit={6} />
+                  </section>
+                </>
+              )}
           </div>
         </div>
       </div>

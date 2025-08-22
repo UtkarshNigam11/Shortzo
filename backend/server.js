@@ -24,10 +24,14 @@ const PORT = process.env.PORT || 5000;
 // Security middleware
 app.use(helmet());
 
+// Trust proxy for rate limiting
+app.set('trust proxy', 1);
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
+  trustProxy: true
 });
 app.use('/api/', limiter);
 

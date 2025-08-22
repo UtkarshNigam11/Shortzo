@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useInfiniteQuery } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import ReelCard from './ReelCard';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import ErrorMessage from '../Common/ErrorMessage';
@@ -139,10 +140,24 @@ const ReelsFeed = ({
 
   if (isError) {
     return (
-      <ErrorMessage
-        message={error?.message || 'Failed to load reels'}
-        onRetry={refetch}
-      />
+      <div className="flex flex-col items-center justify-center py-12 px-4">
+        <div className="text-6xl mb-4">🎬</div>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          Unable to load reels
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 text-center mb-4">
+          We're having trouble connecting to our servers. This might be because the database is empty or there's a connection issue.
+        </p>
+        <button
+          onClick={refetch}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+        >
+          Try Again
+        </button>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+          Error: {error?.message || 'Unknown error'}
+        </p>
+      </div>
     );
   }
 
