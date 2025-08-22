@@ -1,0 +1,39 @@
+{
+  "name": "shortzo",
+  "version": "1.0.0",
+  "description": "A modern MERN stack short video reel platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && npm run dev",
+    "client": "cd frontend && npm start",
+    "install-server": "cd backend && npm install",
+    "install-client": "cd frontend && npm install",
+    "install-all": "npm run install-server && npm run install-client",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UtkarshNigam11/Shortzo.git"
+  },
+  "keywords": [
+    "mern",
+    "react",
+    "nodejs",
+    "mongodb",
+    "express",
+    "video",
+    "reels",
+    "social-media"
+  ],
+  "author": "Utkarsh Nigam <utkarshnigam987@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/UtkarshNigam11/Shortzo/issues"
+  },
+  "homepage": "https://github.com/UtkarshNigam11/Shortzo#readme",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
