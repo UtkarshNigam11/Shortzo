@@ -16,7 +16,15 @@ const reelSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Video URL is required']
   },
+  cloudinaryVideoId: {
+    type: String,
+    default: ''
+  },
   thumbnailUrl: {
+    type: String,
+    default: ''
+  },
+  cloudinaryThumbnailId: {
     type: String,
     default: ''
   },
@@ -94,13 +102,13 @@ const reelSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isApproved: {
+    type: Boolean,
+    default: true // Auto-approve for now
+  },
   isTrending: {
     type: Boolean,
     default: false
-  },
-  isApproved: {
-    type: Boolean,
-    default: true // Auto-approve by default, can be changed for moderation
   },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,

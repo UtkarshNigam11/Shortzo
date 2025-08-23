@@ -6,7 +6,6 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import ReactPlayer from 'react-player';
 import {
   FiUpload,
   FiX,
@@ -60,34 +59,92 @@ const Upload = () => {
   const watchedIsNSFW = watch('isNSFW');
 
   // Fetch categories
-  const { data: categories = [] } = useQuery({
+  const { data: categoriesResponse, isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const response = await api.get('/categories');
-      return response.data.data;
+      return response.data;
     }
   });
+
+  // Ensure categories is always an array
+  const categories = Array.isArray(categoriesResponse?.data?.categories) 
+    ? categoriesResponse.data.categories 
+    : Array.isArray(categoriesResponse?.data) 
+    ? categoriesResponse.data 
+    : Array.isArray(categoriesResponse) 
+    ? categoriesResponse 
+    : [];
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Categories Debug:', {
+      categoriesResponse,
+      categories,
+      categoriesLoading,
+      categoriesError
+    });
+  }, [categoriesResponse, categories, categoriesLoading, categoriesError]);
+
+  // Fallback categories if API fails (matching backend validation)
+  const fallbackCategories = [
+    { _id: 'entertainment', name: 'Entertainment' },
+    { _id: 'music', name: 'Music' },
+    { _id: 'dance', name: 'Dance' },
+    { _id: 'comedy', name: 'Comedy' },
+    { _id: 'sports', name: 'Sports' },
+    { _id: 'food', name: 'Food' },
+    { _id: 'travel', name: 'Travel' },
+    { _id: 'education', name: 'Education' },
+    { _id: 'technology', name: 'Technology' },
+    { _id: 'infotainment', name: 'Infotainment' },
+    { _id: 'news', name: 'News' },
+    { _id: 'makeup', name: 'Makeup' },
+    { _id: 'beauty', name: 'Beauty' },
+    { _id: 'edits', name: 'Edits' }
+  ];
+
+  const finalCategories = (categories && categories.length > 0) ? categories : fallbackCategories;
 
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async (formData) => {
-      const response = await api.post('/reels/upload', formData, {
+      const response = await api.post('/reels', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 150000, // 150 seconds timeout for video uploads
         onUploadProgress: (progressEvent) => {
           const progress = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
           setUploadProgress(progress);
+          
+          // Show processing message when upload completes but request is still pending
+          if (progress === 100) {
+            setTimeout(() => {
+              setUploadProgress(101); // Use 101 to indicate processing phase
+            }, 500);
+          }
         }
       });
       return response.data;
     },
     onSuccess: (data) => {
       toast.success('Reel uploaded successfully!');
-      navigate(`/reel/${data.data._id}`);
+      console.log('Upload success data:', data);
+      // Navigate to home page where user can see their uploaded reel
+      navigate('/');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Upload failed');
+      console.error('Upload error:', error.response?.data);
+      
+      if (error.response?.data?.errors) {
+        // Show specific validation errors
+        error.response.data.errors.forEach(err => {
+          toast.error(`${err.param}: ${err.msg}`);
+        });
+      } else {
+        toast.error(error.response?.data?.message || 'Upload failed');
+      }
       setUploadProgress(0);
     }
   });
@@ -150,18 +207,59 @@ const Upload = () => {
       return;
     }
 
+    // Validate required fields
+    if (!data.title || data.title.trim().length === 0) {
+      toast.error('Title is required');
+      return;
+    }
+
+    if (!data.category) {
+      toast.error('Category is required');
+      return;
+    }
+
+    // Calculate video duration if possible
+    const getDuration = () => {
+      return new Promise((resolve) => {
+        if (videoPreview && selectedFile) {
+          const video = document.createElement('video');
+          video.src = videoPreview;
+          video.onloadedmetadata = () => {
+            resolve(Math.round(video.duration) || 30); // Round to integer
+          };
+          video.onerror = () => resolve(30); // fallback
+        } else {
+          resolve(30); // fallback
+        }
+      });
+    };
+
+    const duration = await getDuration();
+
     const formData = new FormData();
     formData.append('video', selectedFile);
     if (selectedThumbnail) {
       formData.append('thumbnail', selectedThumbnail);
     }
-    formData.append('title', data.title);
-    formData.append('description', data.description);
+    formData.append('title', data.title.trim());
+    formData.append('description', data.description?.trim() || '');
     formData.append('category', data.category);
-    formData.append('tags', JSON.stringify(tags));
-    formData.append('isNSFW', data.isNSFW);
-    formData.append('allowComments', data.allowComments);
-    formData.append('allowDownload', data.allowDownload);
+    formData.append('tags', JSON.stringify(tags || []));
+    formData.append('isNSFW', data.isNSFW ? 'true' : 'false');
+    formData.append('allowComments', data.allowComments !== false ? 'true' : 'false');
+    formData.append('allowDownload', data.allowDownload !== false ? 'true' : 'false');
+    formData.append('duration', duration.toString());
+
+    console.log('Form data being sent:', {
+      title: data.title.trim(),
+      description: data.description?.trim() || '',
+      category: data.category,
+      tags: tags,
+      isNSFW: data.isNSFW,
+      duration: duration,
+      hasVideo: !!selectedFile,
+      hasThumbnail: !!selectedThumbnail
+    });
 
     uploadMutation.mutate(formData);
   };
@@ -280,13 +378,20 @@ const Upload = () => {
                   <div className="relative bg-black rounded-lg overflow-hidden aspect-[9/16] max-w-sm mx-auto">
                     {videoPreview && (
                       <>
-                        <ReactPlayer
-                          url={videoPreview}
-                          playing={isPlaying}
-                          muted={isMuted}
+                        <video
+                          src={videoPreview}
+                          className="w-full h-full object-cover"
                           loop
-                          width="100%"
-                          height="100%"
+                          muted={isMuted}
+                          ref={(ref) => {
+                            if (ref) {
+                              if (isPlaying) {
+                                ref.play().catch(() => {});
+                              } else {
+                                ref.pause();
+                              }
+                            }
+                          }}
                         />
                         
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -358,8 +463,8 @@ const Upload = () => {
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
                       >
                         <option value="">Select a category</option>
-                        {categories.map(category => (
-                          <option key={category._id} value={category.name}>
+                        {finalCategories.map(category => (
+                          <option key={category._id || category.name} value={category.name}>
                             {category.name}
                           </option>
                         ))}
@@ -501,13 +606,21 @@ const Upload = () => {
                     {uploadMutation.isLoading && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span>Uploading...</span>
-                          <span>{uploadProgress}%</span>
+                          <span>
+                            {uploadProgress > 100 ? 'Processing video...' : 'Uploading...'}
+                          </span>
+                          <span>
+                            {uploadProgress > 100 ? 'Please wait' : `${uploadProgress}%`}
+                          </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
-                            className="bg-indigo-600 h-2 rounded-full transition-all"
-                            style={{ width: `${uploadProgress}%` }}
+                            className={`h-2 rounded-full transition-all ${
+                              uploadProgress > 100 
+                                ? 'bg-yellow-500 animate-pulse' 
+                                : 'bg-indigo-600'
+                            }`}
+                            style={{ width: uploadProgress > 100 ? '100%' : `${uploadProgress}%` }}
                           />
                         </div>
                       </div>

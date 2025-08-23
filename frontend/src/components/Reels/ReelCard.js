@@ -130,7 +130,7 @@ const ReelCard = ({ reel, isActive, onReelChange }) => {
 
   const handleShare = async () => {
     const shareData = {
-      title: `${reel.user.username}'s reel on Shortzo`,
+      title: `${reel.author?.username || 'Unknown'}'s reel on Shortzo`,
       text: reel.description || 'Check out this awesome reel!',
       url: `${window.location.origin}/reel/${reel._id}`
     };
@@ -245,17 +245,17 @@ const ReelCard = ({ reel, isActive, onReelChange }) => {
           {/* User Info and Description */}
           <div className="flex-1 mr-4 text-white">
             <Link
-              to={`/profile/${reel.user.username}`}
+              to={`/profile/${reel.author?.username || ''}`}
               className="flex items-center space-x-3 mb-2 hover:opacity-80"
             >
               <Avatar
-                src={reel.user.avatar}
-                alt={reel.user.username}
+                src={reel.author?.profilePicture}
+                alt={reel.author?.username || 'User'}
                 size="medium"
                 className="ring-2 ring-white"
               />
               <div>
-                <h3 className="font-semibold">{reel.user.username}</h3>
+                <h3 className="font-semibold">{reel.author?.username || 'Unknown User'}</h3>
                 <p className="text-sm text-gray-300">
                   {formatRelativeTime(reel.createdAt)}
                 </p>

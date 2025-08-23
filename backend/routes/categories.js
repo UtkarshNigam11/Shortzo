@@ -29,7 +29,7 @@ router.get('/', optionalAuth, async (req, res) => {
           .populate('author', 'username profilePicture isVerified')
           .limit(3);
         } else {
-          // If no featured reels, get the most popular ones
+          // If no featured reels, get the most recent ones
           featuredReels = await Reel.find({
             category: category.name,
             isActive: true,
@@ -37,7 +37,7 @@ router.get('/', optionalAuth, async (req, res) => {
             ...((!req.user || !req.user.preferredCategories?.includes('NSFW')) && { isNSFW: { $ne: true } })
           })
           .populate('author', 'username profilePicture isVerified')
-          .sort({ 'likes': -1, 'views': -1 })
+          .sort({ createdAt: -1 })
           .limit(3);
         }
 

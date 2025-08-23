@@ -7,6 +7,9 @@ const multer = require('multer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
+// Load environment variables FIRST
+dotenv.config();
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const reelRoutes = require('./routes/reels');
@@ -15,8 +18,8 @@ const categoryRoutes = require('./routes/categories');
 const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
 
-// Load environment variables
-dotenv.config();
+// Import Cloudinary config
+const { testCloudinaryConnection } = require('./config/cloudinary');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -135,9 +138,16 @@ app.use('*', (req, res) => {
 });
 
 // Start server
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Test Cloudinary connection
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    await testCloudinaryConnection();
+  } else {
+    console.log('⚠️  Cloudinary not configured. Videos will use local storage.');
+  }
 });
 
 // Graceful shutdown

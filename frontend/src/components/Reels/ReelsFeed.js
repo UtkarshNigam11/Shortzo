@@ -15,7 +15,7 @@ const ReelsFeed = ({
   searchQuery = '', 
   tags = [] 
 }) => {
-  const [sortBy, setSortBy] = useState('latest');
+  const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
   const [activeReel, setActiveReel] = useState(0);
   const feedRef = useRef(null);
@@ -49,7 +49,11 @@ const ReelsFeed = ({
       return response.data;
     },
     getNextPageParam: (lastPage) => {
-      const { currentPage, totalPages } = lastPage.pagination;
+      const pagination = lastPage?.data?.pagination;
+      if (!pagination) {
+        return undefined;
+      }
+      const { currentPage, totalPages } = pagination;
       return currentPage < totalPages ? currentPage + 1 : undefined;
     },
     enabled: true,
@@ -57,7 +61,19 @@ const ReelsFeed = ({
   });
 
   // Flatten reels data
-  const reels = data?.pages?.flatMap(page => page.data) || [];
+  console.log('Raw useInfiniteQuery data:', data);
+  const reels = data?.pages?.flatMap(page => {
+    console.log('Processing page:', page);
+    return page?.data || [];
+  }) || [];
+  
+  // Debug logging
+  console.log('ReelsFeed Debug:', {
+    pages: data?.pages?.length,
+    firstPageData: data?.pages?.[0],
+    totalReels: reels.length,
+    reels: reels
+  });
 
   // Intersection Observer for auto-play
   useEffect(() => {

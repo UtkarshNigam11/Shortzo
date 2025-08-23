@@ -4,7 +4,7 @@ const Reel = require('../models/Reel');
 const User = require('../models/User');
 const Category = require('../models/Category');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
-const { uploadReelFiles, handleUploadError } = require('../middleware/upload');
+const { uploadReel, uploadToCloudinary, deleteFromCloudinary, getOptimizedUrl } = require('../config/cloudinary');
 
 const router = express.Router();
 
@@ -12,96 +12,200 @@ const router = express.Router();
 // @desc    Create a new reel
 // @access  Private
 router.post('/', [
-  authenticateToken,
-  uploadReelFiles,
-  handleUploadError,
-  body('title').isLength({ min: 1, max: 100 }).withMessage('Title must be between 1 and 100 characters'),
-  body('description').optional().isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters'),
-  body('category').isIn(['Infotainment', 'Entertainment', 'News', 'Music', 'Dance', 'Makeup', 'Beauty', 'Edits', 'Comedy', 'Sports', 'Food', 'Travel', 'Education', 'Technology']).withMessage('Invalid category'),
-  body('tags').optional().isArray().withMessage('Tags must be an array'),
-  body('isNSFW').optional().isBoolean().withMessage('isNSFW must be a boolean'),
-  body('duration').isNumeric().withMessage('Duration must be a number')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+  authenticateToken
+], (req, res) => {
+  uploadReel(req, res, async (err) => {
+    if (err) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: errors.array()
+        message: err.message || 'File upload failed'
       });
     }
 
-    // Check if video file is uploaded
-    if (!req.files || !req.files.video) {
-      return res.status(400).json({
-        success: false,
-        message: 'Video file is required'
-      });
-    }
+    try {
+      // Debug: Log received data
+      console.log('Received req.body:', req.body);
+      console.log('Received req.files:', req.files ? Object.keys(req.files) : 'none');
 
-    const { title, description = '', category, tags = [], isNSFW = false, duration } = req.body;
-    const videoFile = req.files.video[0];
-    const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
+      // Manual validation after multer processing
+      const { title, description = '', category, tags = [], isNSFW = false, duration } = req.body;
 
-    // Parse tags if they come as a string
-    let parsedTags = Array.isArray(tags) ? tags : [];
-    if (typeof tags === 'string') {
-      try {
-        parsedTags = JSON.parse(tags);
-      } catch (e) {
-        parsedTags = tags.split(',').map(tag => tag.trim());
+      // Validate required fields
+      if (!title || title.trim().length === 0 || title.length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Title must be between 1 and 100 characters'
+        });
       }
+
+      if (!category) {
+        return res.status(400).json({
+          success: false,
+          message: 'Category is required'
+        });
+      }
+
+      const validCategories = ['Infotainment', 'Entertainment', 'News', 'Music', 'Dance', 'Makeup', 'Beauty', 'Edits', 'Comedy', 'Sports', 'Food', 'Travel', 'Education', 'Technology'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid category'
+        });
+      }
+
+      const numDuration = parseFloat(duration);
+      if (!duration || isNaN(numDuration) || numDuration <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Duration must be a positive number'
+        });
+      }
+
+      if (description && description.length > 500) {
+        return res.status(400).json({
+          success: false,
+          message: 'Description cannot exceed 500 characters'
+        });
+      }
+
+      // Check if video file is uploaded
+      if (!req.files || !req.files.video || req.files.video.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Video file is required'
+        });
+      }
+
+      const videoFile = req.files.video[0];
+      const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
+
+      // Convert FormData string values to proper types
+      const parsedDuration = parseFloat(duration) || 30;
+      const parsedIsNSFW = isNSFW === 'true' || isNSFW === true;
+
+      // Additional validation for converted values
+      if (isNaN(parsedDuration) || parsedDuration <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid duration value'
+        });
+      }
+
+      // Parse tags if they come as a string
+      let parsedTags = Array.isArray(tags) ? tags : [];
+      if (typeof tags === 'string') {
+        try {
+          parsedTags = JSON.parse(tags);
+        } catch (e) {
+          parsedTags = tags.split(',').map(tag => tag.trim());
+        }
+      }
+
+      // Upload video to Cloudinary
+      console.log('Uploading video to Cloudinary...');
+      console.log('Video file size:', videoFile.buffer.length, 'bytes');
+      const videoResult = await uploadToCloudinary(
+        videoFile.buffer, 
+        'video', 
+        'shortzo/videos'
+      );
+      console.log('Video uploaded successfully:', videoResult.secure_url);
+
+      // Upload thumbnail to Cloudinary (if provided)
+      let thumbnailResult = null;
+      if (thumbnailFile) {
+        console.log('Uploading thumbnail to Cloudinary...');
+        thumbnailResult = await uploadToCloudinary(
+          thumbnailFile.buffer, 
+          'image', 
+          'shortzo/thumbnails'
+        );
+      }
+
+      // Create reel object with Cloudinary URLs
+      const reelData = {
+        title,
+        description,
+        videoUrl: videoResult.secure_url,
+        cloudinaryVideoId: videoResult.public_id,
+        category,
+        tags: parsedTags.filter(tag => tag && tag.length > 0),
+        author: req.user._id,
+        isNSFW: parsedIsNSFW,
+        duration: parsedDuration,
+        fileSize: videoResult.bytes,
+        views: [],
+        likes: [],
+        comments: []
+      };
+
+      if (thumbnailResult) {
+        reelData.thumbnailUrl = thumbnailResult.secure_url;
+        reelData.cloudinaryThumbnailId = thumbnailResult.public_id;
+      }
+
+      console.log('Creating new Reel document with data:', reelData);
+      const reel = new Reel(reelData);
+      console.log('Saving reel to database...');
+      await reel.save();
+      console.log('Reel saved successfully, ID:', reel._id);
+
+      // Update user's reels array
+      console.log('Updating user reels array...');
+      await User.findByIdAndUpdate(req.user._id, {
+        $push: { reels: reel._id }
+      });
+      console.log('User reels array updated');
+
+      // Update category reel count
+      console.log('Updating category reel count...');
+      await Category.findOneAndUpdate(
+        { name: category },
+        { $inc: { reelsCount: 1 } },
+        { upsert: true }
+      );
+      console.log('Category reel count updated');
+
+      // Populate author info for response
+      console.log('Populating author info...');
+      const populatedReel = await Reel.findById(reel._id).populate('author', 'username profilePicture isVerified');
+      console.log('Author info populated');
+
+      console.log('Sending success response...');
+      res.status(201).json({
+        success: true,
+        message: 'Reel uploaded successfully!',
+        data: { reel: populatedReel }
+      });
+
+    } catch (error) {
+      console.error('Create reel error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      // If there was an error after uploading to Cloudinary, try to clean up
+      if (error.videoResult?.public_id) {
+        try {
+          await deleteFromCloudinary(error.videoResult.public_id, 'video');
+        } catch (cleanupError) {
+          console.error('Failed to cleanup video from Cloudinary:', cleanupError);
+        }
+      }
+      
+      if (error.thumbnailResult?.public_id) {
+        try {
+          await deleteFromCloudinary(error.thumbnailResult.public_id, 'image');
+        } catch (cleanupError) {
+          console.error('Failed to cleanup thumbnail from Cloudinary:', cleanupError);
+        }
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error during reel creation'
+      });
     }
-
-    // Create reel object
-    const reelData = {
-      title,
-      description,
-      videoUrl: `/uploads/videos/${videoFile.filename}`,
-      category,
-      tags: parsedTags.filter(tag => tag && tag.length > 0),
-      author: req.user._id,
-      isNSFW,
-      duration: parseFloat(duration),
-      fileSize: videoFile.size
-    };
-
-    if (thumbnailFile) {
-      reelData.thumbnailUrl = `/uploads/thumbnails/${thumbnailFile.filename}`;
-    }
-
-    const reel = new Reel(reelData);
-    await reel.save();
-
-    // Update user's reels array
-    await User.findByIdAndUpdate(req.user._id, {
-      $push: { reels: reel._id }
-    });
-
-    // Update category reel count
-    await Category.findOneAndUpdate(
-      { name: category },
-      { $inc: { reelsCount: 1 } },
-      { upsert: true }
-    );
-
-    // Populate author info for response
-    await reel.populate('author', 'username profilePicture isVerified');
-
-    res.status(201).json({
-      success: true,
-      message: 'Reel created successfully',
-      data: { reel }
-    });
-
-  } catch (error) {
-    console.error('Create reel error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during reel creation'
-    });
-  }
+  });
 });
 
 // @route   GET /api/reels
@@ -113,11 +217,14 @@ router.get('/', [
   query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50'),
   query('category').optional().isString().withMessage('Category must be a string'),
   query('tags').optional().isString().withMessage('Tags must be a string'),
-  query('sortBy').optional().isIn(['newest', 'oldest', 'trending', 'popular']).withMessage('Invalid sort option')
+  query('sortBy').optional().isIn(['newest', 'oldest', 'trending', 'popular']).withMessage('Invalid sort option'),
+  query('showNSFW').optional().isIn(['true', 'false']).withMessage('showNSFW must be true or false')
 ], async (req, res) => {
   try {
+    console.log('GET /api/reels - Query params:', req.query);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('GET reels validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -137,6 +244,8 @@ router.get('/', [
     if (!req.user || !req.user.preferredCategories?.includes('NSFW')) {
       filter.isNSFW = { $ne: true };
     }
+
+    console.log('Built filter:', filter, 'User:', req.user ? req.user.username : 'No user');
 
     if (category) {
       filter.category = category;
@@ -165,7 +274,7 @@ router.get('/', [
         sort = { isTrending: -1, createdAt: -1 };
         break;
       case 'popular':
-        sort = { 'likes': -1, 'views': -1, createdAt: -1 };
+        sort = { createdAt: -1 }; // For now, sort by newest since we need aggregation for proper popularity sorting
         break;
       default: // newest
         sort = { createdAt: -1 };
@@ -178,6 +287,14 @@ router.get('/', [
       .skip(skip)
       .limit(limit)
       .lean();
+
+    console.log('Database query result:', {
+      filter,
+      foundReelsCount: reels.length,
+      totalReelsInDB: await Reel.countDocuments(),
+      firstReelAuthor: reels[0]?.author,
+      firstReelAuthorId: reels[0]?.author?._id || reels[0]?.author
+    });
 
     // Add engagement stats and user interaction status
     const reelsWithStats = reels.map(reel => {
@@ -200,20 +317,22 @@ router.get('/', [
     });
 
     const totalReels = await Reel.countDocuments(filter);
-    const totalPages = Math.ceil(totalReels / limit);
+
+    console.log('Sending response to frontend:', {
+      reelsCount: reelsWithStats.length,
+      firstReelTitle: reelsWithStats[0]?.title,
+      totalReels
+    });
 
     res.json({
       success: true,
-      data: {
-        reels: reelsWithStats,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalReels,
-          hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
-      }
+      message: 'Reels fetched successfully',
+      data: reelsWithStats,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalReels / limit),
+        totalReels,
+      },
     });
 
   } catch (error) {
