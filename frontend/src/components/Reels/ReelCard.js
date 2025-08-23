@@ -5,7 +5,7 @@ import ReactPlayer from 'react-player';
 import { useAuth } from '../../context/AuthContext';
 import { useMutation, useQueryClient } from 'react-query';
 import { api } from '../../utils/api';
-import { formatDistanceToNow } from 'date-fns';
+import { formatRelativeTime } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import {
   FiHeart,
@@ -257,7 +257,7 @@ const ReelCard = ({ reel, isActive, onReelChange }) => {
               <div>
                 <h3 className="font-semibold">{reel.user.username}</h3>
                 <p className="text-sm text-gray-300">
-                  {formatDistanceToNow(new Date(reel.createdAt), { addSuffix: true })}
+                  {formatRelativeTime(reel.createdAt)}
                 </p>
               </div>
             </Link>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../utils/api';
-import { formatDistanceToNow } from 'date-fns';
+import { formatRelativeTime } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -256,7 +256,7 @@ const Profile = () => {
               <div className="flex flex-wrap items-center justify-center md:justify-start space-x-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
                 <div className="flex items-center space-x-1">
                   <FiCalendar className="h-4 w-4" />
-                  <span>Joined {formatDistanceToNow(new Date(profile?.createdAt), { addSuffix: true })}</span>
+                  <span>Joined {formatRelativeTime(profile?.createdAt)}</span>
                 </div>
                 
                 {profile?.location && (
