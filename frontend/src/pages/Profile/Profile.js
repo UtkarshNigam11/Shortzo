@@ -45,7 +45,7 @@ const Profile = () => {
     queryKey: ['profile', username],
     queryFn: async () => {
       const response = await api.get(`/users/profile/${username}`);
-      return response.data.data;
+      return response.data.data.user;
     }
   });
 

@@ -236,10 +236,15 @@ router.get('/', [
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    const { category, tags, sortBy = 'newest', search } = req.query;
+    const { category, tags, sortBy = 'newest', search, userId } = req.query;
 
     // Build filter object
     let filter = { isActive: true, isApproved: true };
+
+    // Filter by specific user if userId is provided
+    if (userId) {
+      filter.author = userId;
+    }
 
     // Filter out NSFW content for non-authenticated users or users who haven't opted in
     if (!req.user || !req.user.preferredCategories?.includes('NSFW')) {
@@ -356,6 +361,49 @@ router.get('/', [
     res.status(500).json({
       success: false,
       message: 'Server error while fetching reels'
+    });
+  }
+});
+
+// @route   GET /api/reels/trending
+// @desc    Get trending reels
+// @access  Public (optional auth)
+router.get('/trending', optionalAuth, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+
+    let filter = { isActive: true, isApproved: true, isTrending: true };
+
+    // Filter NSFW content
+    if (!req.user || !req.user.preferredCategories?.includes('NSFW')) {
+      filter.isNSFW = { $ne: true };
+    }
+
+    const trendingReels = await Reel.find(filter)
+      .populate('author', 'username profilePicture isVerified')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const reelsWithStats = trendingReels.map(reel => ({
+      ...reel,
+      likesCount: reel.likes?.length || 0,
+      commentsCount: reel.comments?.length || 0,
+      sharesCount: reel.shares?.length || 0,
+      viewsCount: reel.views?.length || 0,
+      isLiked: req.user ? reel.likes?.some(like => like.user.toString() === req.user._id.toString()) : false
+    }));
+
+    res.json({
+      success: true,
+      data: { reels: reelsWithStats }
+    });
+
+  } catch (error) {
+    console.error('Get trending reels error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching trending reels'
     });
   }
 });
@@ -653,49 +701,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while deleting reel'
-    });
-  }
-});
-
-// @route   GET /api/reels/trending
-// @desc    Get trending reels
-// @access  Public (optional auth)
-router.get('/trending', optionalAuth, async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 20;
-
-    let filter = { isActive: true, isApproved: true, isTrending: true };
-
-    // Filter NSFW content
-    if (!req.user || !req.user.preferredCategories?.includes('NSFW')) {
-      filter.isNSFW = { $ne: true };
-    }
-
-    const trendingReels = await Reel.find(filter)
-      .populate('author', 'username profilePicture isVerified')
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
-
-    const reelsWithStats = trendingReels.map(reel => ({
-      ...reel,
-      likesCount: reel.likes?.length || 0,
-      commentsCount: reel.comments?.length || 0,
-      sharesCount: reel.shares?.length || 0,
-      viewsCount: reel.views?.length || 0,
-      isLiked: req.user ? reel.likes?.some(like => like.user.toString() === req.user._id.toString()) : false
-    }));
-
-    res.json({
-      success: true,
-      data: { reels: reelsWithStats }
-    });
-
-  } catch (error) {
-    console.error('Get trending reels error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching trending reels'
     });
   }
 });

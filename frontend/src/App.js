@@ -12,6 +12,10 @@ import Register from './pages/Auth/Register';
 import Upload from './pages/Upload/Upload';
 import Profile from './pages/Profile/Profile';
 import Settings from './pages/Settings/Settings';
+import Explore from './pages/Explore';
+import Trending from './pages/Trending';
+import Liked from './pages/Liked';
+import Saved from './pages/Saved';
 
 // Placeholder component for pages not yet created
 const NotFound = () => (
@@ -64,6 +68,8 @@ function App() {
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<Home />} />
+                  <Route path="/explore" element={<Explore />} />
+                  <Route path="/trending" element={<Trending />} />
                   <Route path="/profile/:username" element={<Profile />} />
                   
                   {/* Protected Routes */}
@@ -72,6 +78,22 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <Upload />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/liked" 
+                    element={
+                      <ProtectedRoute>
+                        <Liked />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/saved" 
+                    element={
+                      <ProtectedRoute>
+                        <Saved />
                       </ProtectedRoute>
                     } 
                   />

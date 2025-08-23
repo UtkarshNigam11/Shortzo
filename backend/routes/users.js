@@ -486,4 +486,124 @@ router.get('/saved-reels', authenticateToken, async (req, res) => {
   }
 });
 
+// @route   GET /api/users/bookmarks
+// @desc    Get user's bookmarked/saved reels
+// @access  Private
+router.get('/bookmarks', authenticateToken, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const user = await User.findById(req.user._id);
+    
+    if (!user.savedReels || user.savedReels.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: {
+          currentPage: page,
+          totalPages: 0,
+          totalReels: 0,
+        }
+      });
+    }
+
+    const savedReels = await Reel.find({
+      _id: { $in: user.savedReels },
+      isActive: true
+    })
+    .populate('author', 'username profilePicture isVerified')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+    // Add engagement stats
+    const reelsWithStats = savedReels.map(reel => ({
+      ...reel,
+      likesCount: reel.likes?.length || 0,
+      commentsCount: reel.comments?.length || 0,
+      sharesCount: reel.shares?.length || 0,
+      viewsCount: reel.views?.length || 0,
+      isLiked: reel.likes?.some(like => like.user.toString() === req.user._id.toString()) || false,
+      isSaved: true // Always true since these are saved reels
+    }));
+
+    const totalSavedReels = user.savedReels.length;
+
+    res.json({
+      success: true,
+      data: reelsWithStats,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalSavedReels / limit),
+        totalReels: totalSavedReels,
+      }
+    });
+
+  } catch (error) {
+    console.error('Get bookmarks error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching bookmarks'
+    });
+  }
+});
+
+// @route   GET /api/users/liked-reels
+// @desc    Get user's liked reels
+// @access  Private
+router.get('/liked-reels', authenticateToken, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Find reels that the user has liked
+    const likedReels = await Reel.find({
+      'likes.user': req.user._id,
+      isActive: true
+    })
+    .populate('author', 'username profilePicture isVerified')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+    // Add engagement stats
+    const reelsWithStats = likedReels.map(reel => ({
+      ...reel,
+      likesCount: reel.likes?.length || 0,
+      commentsCount: reel.comments?.length || 0,
+      sharesCount: reel.shares?.length || 0,
+      viewsCount: reel.views?.length || 0,
+      isLiked: true, // Always true since these are liked reels
+      isSaved: req.user.savedReels?.includes(reel._id) || false
+    }));
+
+    const totalLikedReels = await Reel.countDocuments({
+      'likes.user': req.user._id,
+      isActive: true
+    });
+
+    res.json({
+      success: true,
+      data: reelsWithStats,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalLikedReels / limit),
+        totalReels: totalLikedReels,
+      }
+    });
+
+  } catch (error) {
+    console.error('Get liked reels error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching liked reels'
+    });
+  }
+});
+
 module.exports = router;

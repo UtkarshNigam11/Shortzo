@@ -11,13 +11,28 @@ const router = express.Router();
 // @access  Public (optional auth)
 router.get('/', optionalAuth, async (req, res) => {
   try {
+    console.log('GET /api/categories - Fetching categories with real-time counts...');
+
     const categories = await Category.find({ isActive: true })
       .sort({ sortOrder: 1, name: 1 })
       .select('name slug description icon color reelsCount featuredReels');
 
-    // For each category, get a few featured reels
+    // Update reel counts and get featured reels for each category
     const categoriesWithReels = await Promise.all(
       categories.map(async (category) => {
+        // Get real-time count of active reels
+        const realTimeReelsCount = await Reel.countDocuments({
+          category: category.name,
+          isActive: true,
+          isApproved: true,
+          ...((!req.user || !req.user.preferredCategories?.includes('NSFW')) && { isNSFW: { $ne: true } })
+        });
+
+        // Update the category's reel count if different
+        if (category.reelsCount !== realTimeReelsCount) {
+          await Category.findByIdAndUpdate(category._id, { reelsCount: realTimeReelsCount });
+        }
+
         let featuredReels = [];
         
         if (category.featuredReels.length > 0) {
@@ -43,6 +58,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
         return {
           ...category.toObject(),
+          reelsCount: realTimeReelsCount, // Use real-time count
           featuredReels: featuredReels.map(reel => ({
             _id: reel._id,
             title: reel.title,
@@ -54,6 +70,8 @@ router.get('/', optionalAuth, async (req, res) => {
         };
       })
     );
+
+    console.log(`Returning ${categoriesWithReels.length} categories with updated counts`);
 
     res.json({
       success: true,
@@ -68,6 +86,7 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   }
 });
+
 
 // @route   GET /api/categories/:slug
 // @desc    Get category by slug

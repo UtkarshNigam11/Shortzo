@@ -13,7 +13,9 @@ const ReelsFeed = ({
   userId = null, 
   showNSFW = false, 
   searchQuery = '', 
-  tags = [] 
+  tags = [],
+  showTrending = false,
+  limit
 }) => {
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
@@ -32,12 +34,12 @@ const ReelsFeed = ({
     error,
     refetch
   } = useInfiniteQuery({
-    queryKey: ['reels', { category, userId, showNSFW, searchQuery, tags, sortBy }],
+    queryKey: ['reels', { category, userId, showNSFW, searchQuery, tags, sortBy, showTrending }],
     queryFn: async ({ pageParam = 1 }) => {
       const params = new URLSearchParams({
         page: pageParam,
-        limit: 10,
-        sortBy,
+        limit: limit || 10,
+        sortBy: showTrending ? 'trending' : sortBy,
         ...(category && { category }),
         ...(userId && { userId }),
         ...(showNSFW !== undefined && { showNSFW }),
@@ -45,11 +47,13 @@ const ReelsFeed = ({
         ...(tags.length > 0 && { tags: tags.join(',') })
       });
 
-      const response = await api.get(`/reels?${params}`);
+      // Use trending endpoint if showTrending is true
+      const endpoint = showTrending ? '/reels/trending' : '/reels';
+      const response = await api.get(`${endpoint}?${params}`);
       return response.data;
     },
     getNextPageParam: (lastPage) => {
-      const pagination = lastPage?.data?.pagination;
+      const pagination = lastPage?.pagination;
       if (!pagination) {
         return undefined;
       }
@@ -61,18 +65,13 @@ const ReelsFeed = ({
   });
 
   // Flatten reels data
-  console.log('Raw useInfiniteQuery data:', data);
-  const reels = data?.pages?.flatMap(page => {
-    console.log('Processing page:', page);
-    return page?.data || [];
-  }) || [];
+  const reels = data?.pages?.flatMap(page => page.data || []) || [];
   
   // Debug logging
   console.log('ReelsFeed Debug:', {
     pages: data?.pages?.length,
     firstPageData: data?.pages?.[0],
-    totalReels: reels.length,
-    reels: reels
+    totalReels: reels.length
   });
 
   // Intersection Observer for auto-play

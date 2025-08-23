@@ -267,7 +267,7 @@ const ReelCard = ({ reel, isActive, onReelChange }) => {
             )}
 
             {/* Tags */}
-            {reel.tags.length > 0 && (
+            {reel.tags && reel.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
                 {reel.tags.slice(0, 3).map((tag, index) => (
                   <Link
@@ -278,7 +278,7 @@ const ReelCard = ({ reel, isActive, onReelChange }) => {
                     #{tag}
                   </Link>
                 ))}
-                {reel.tags.length > 3 && (
+                {reel.tags && reel.tags.length > 3 && (
                   <span className="text-xs text-gray-300">
                     +{reel.tags.length - 3} more
                   </span>
