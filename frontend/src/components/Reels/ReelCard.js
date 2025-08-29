@@ -173,7 +173,7 @@ const ReelCard = ({ reel, isActive, onReelChange }) => {
   };
 
   return (
-    <div className="relative w-full h-screen bg-black rounded-lg overflow-hidden group">
+    <div className="relative w-full max-w-sm mx-auto bg-black rounded-lg overflow-hidden shadow-lg" style={{ aspectRatio: '9/16', height: '500px' }}>
       {/* Video Player */}
       <ReactPlayer
         ref={playerRef}

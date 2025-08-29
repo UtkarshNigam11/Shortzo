@@ -10,6 +10,13 @@ const rateLimit = require('express-rate-limit');
 // Load environment variables FIRST
 dotenv.config();
 
+// Debug: Log environment variables
+console.log('=== ENVIRONMENT VARIABLES ===');
+console.log('MAX_FILE_SIZE:', process.env.MAX_FILE_SIZE);
+console.log('MAX_VIDEO_SIZE:', process.env.MAX_VIDEO_SIZE);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('===============================');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const reelRoutes = require('./routes/reels');
@@ -56,7 +63,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Body parsing middleware with error handling
 app.use(express.json({ 
-  limit: '10mb',
+  limit: '400mb',
   verify: (req, res, buf, encoding) => {
     try {
       JSON.parse(buf);
@@ -70,7 +77,7 @@ app.use(express.json({
     }
   }
 }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '400mb' }));
 
 // Serve static files (uploaded videos/images)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -117,7 +124,7 @@ app.use((error, req, res, next) => {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ 
         success: false, 
-        message: 'File too large. Maximum size is 50MB.' 
+        message: 'File too large. Maximum size is 350MB.' 
       });
     }
   }

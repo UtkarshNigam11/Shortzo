@@ -79,7 +79,7 @@ const uploadVideo = multer({
   storage: videoStorage,
   fileFilter: videoFileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: parseInt(process.env.MAX_VIDEO_SIZE) || 350 * 1024 * 1024, // 350MB limit
     files: 1
   }
 }).single('video');
@@ -130,7 +130,7 @@ const uploadReelFiles = multer({
     }
   },
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: parseInt(process.env.MAX_VIDEO_SIZE) || 350 * 1024 * 1024, // 350MB limit
     files: 2
   }
 }).fields([

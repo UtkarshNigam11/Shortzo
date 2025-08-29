@@ -273,14 +273,14 @@ const ReelsFeed = ({
       {/* Reels Feed */}
       <div
         ref={feedRef}
-        className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
+        className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 snap-y snap-mandatory"
       >
-        <div className="space-y-4 p-4">
+        <div className="flex flex-col">
           {reels.map((reel, index) => (
             <div
               key={reel._id}
               ref={el => reelRefs.current[reel._id] = el}
-              className="min-h-screen snap-start"
+              className="h-screen flex items-center justify-center snap-start snap-always py-8"
             >
               <ReelCard
                 reel={reel}
@@ -292,14 +292,14 @@ const ReelsFeed = ({
 
           {/* Loading more indicator */}
           {isFetchingNextPage && (
-            <div className="flex justify-center py-8">
+            <div className="h-screen flex items-center justify-center snap-start">
               <LoadingSpinner />
             </div>
           )}
 
           {/* No more reels indicator */}
           {!hasNextPage && reels.length > 0 && (
-            <div className="text-center py-8">
+            <div className="h-screen flex items-center justify-center snap-start">
               <p className="text-gray-500 dark:text-gray-400">
                 You've reached the end! 🎉
               </p>

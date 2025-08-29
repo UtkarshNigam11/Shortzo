@@ -15,8 +15,15 @@ const router = express.Router();
 router.post('/', [
   authenticateToken
 ], (req, res) => {
+  console.log('=== REEL UPLOAD REQUEST START ===');
+  console.log('Request headers:', req.headers['content-type']);
+  console.log('Request size:', req.headers['content-length']);
+  
   uploadReel(req, res, async (err) => {
     if (err) {
+      console.error('Multer upload error:', err);
+      console.error('Error code:', err.code);
+      console.error('Error message:', err.message);
       return res.status(400).json({
         success: false,
         message: err.message || 'File upload failed'
@@ -105,12 +112,37 @@ router.post('/', [
       // Upload video to Cloudinary
       console.log('Uploading video to Cloudinary...');
       console.log('Video file size:', videoFile.buffer.length, 'bytes');
-      const videoResult = await uploadToCloudinary(
-        videoFile.buffer, 
-        'video', 
-        'shortzo/videos'
-      );
-      console.log('Video uploaded successfully:', videoResult.secure_url);
+      
+      // Check if file size exceeds Cloudinary limits (typically 100MB for free accounts)
+      const fileSizeMB = videoFile.buffer.length / (1024 * 1024);
+      console.log('Video file size:', fileSizeMB.toFixed(2), 'MB');
+      
+      if (fileSizeMB > 100) {
+        console.warn('⚠️  File size exceeds typical Cloudinary free plan limits (100MB)');
+        console.warn('⚠️  Upload may fail due to Cloudinary account limits');
+      }
+      
+      let videoResult;
+      try {
+        videoResult = await uploadToCloudinary(
+          videoFile.buffer, 
+          'video', 
+          'shortzo/videos'
+        );
+        console.log('Video uploaded successfully:', videoResult.secure_url);
+      } catch (uploadError) {
+        console.error('Cloudinary upload failed:', uploadError);
+        
+        // Handle specific Cloudinary errors
+        if (uploadError.http_code === 413 || uploadError.http_code === 499) {
+          return res.status(413).json({
+            success: false,
+            message: `File too large for Cloudinary upload (${fileSizeMB.toFixed(1)}MB). Maximum file size supported is approximately 100MB on free plans. Please compress your video or upgrade your Cloudinary plan.`
+          });
+        }
+        
+        throw uploadError; // Re-throw other errors
+      }
 
       // Upload thumbnail to Cloudinary (if provided)
       let thumbnailResult = null;

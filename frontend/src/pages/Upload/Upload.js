@@ -135,7 +135,10 @@ const Upload = () => {
       navigate('/');
     },
     onError: (error) => {
-      console.error('Upload error:', error.response?.data);
+      console.error('Upload error:', error);
+      console.error('Upload error response:', JSON.stringify(error.response?.data, null, 2));
+      console.error('Upload error status:', error.response?.status);
+      console.error('Upload error message:', error.message);
       
       if (error.response?.data?.errors) {
         // Show specific validation errors
@@ -159,9 +162,9 @@ const Upload = () => {
       return;
     }
 
-    // Validate file size (500MB max)
-    if (file.size > 500 * 1024 * 1024) {
-      toast.error('File size must be less than 500MB');
+    // Validate file size (100MB max - Cloudinary free plan limit)
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('File size must be less than 100MB due to Cloudinary limits. Please compress your video.');
       return;
     }
 
@@ -332,7 +335,7 @@ const Upload = () => {
                     Select Video File
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Choose a video file from your device (Max: 500MB)
+                    Choose a video file from your device (Max: 100MB)
                   </p>
                   <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
                     Browse Files
@@ -353,7 +356,7 @@ const Upload = () => {
                   </div>
                   <div className="flex items-center justify-center space-x-2">
                     <FiUpload className="h-4 w-4" />
-                    <span>Max file size: 500MB</span>
+                    <span>Max file size: 100MB</span>
                   </div>
                   <div className="flex items-center justify-center space-x-2">
                     <FiPlay className="h-4 w-4" />

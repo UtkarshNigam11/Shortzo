@@ -172,7 +172,7 @@ Shortzo/
 ### Video Upload System
 - Drag-and-drop interface
 - Multiple format support (MP4, WebM, etc.)
-- File size validation (max 50MB)
+- File size validation (max 350MB)
 - Progress indicators
 - Category selection
 - Tag system
@@ -263,7 +263,7 @@ For support, email utkarshnigam987@gmail.com or create an issue on GitHub.
 
 ### Common Issues
 1. **Video not playing**: Ensure video format is supported (MP4, WebM)
-2. **Upload fails**: Check file size (max 50MB) and internet connection
+2. **Upload fails**: Check file size (max 350MB) and internet connection
 3. **Authentication errors**: Clear browser cache and cookies
 4. **Mobile layout issues**: Ensure latest browser version
 

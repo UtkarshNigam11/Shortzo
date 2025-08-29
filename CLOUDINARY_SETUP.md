@@ -31,7 +31,7 @@ Cloudinary free tier includes:
 - ✅ **25 GB** storage
 - ✅ **25 GB** monthly bandwidth
 - ✅ **1000** transformations per month
-- ✅ Video uploads up to 100MB each
+- ✅ Video uploads up to 350MB each
 - ✅ CDN delivery worldwide
 
 ## 5. Features Included
@@ -58,7 +58,7 @@ With this integration, you get:
 - Ensure no firewall blocking
 
 **Upload Failures:**
-- Check file size limits (50MB for videos)
+- Check file size limits (350MB for videos)
 - Verify file format is supported
 - Check Cloudinary dashboard for quota usage
 

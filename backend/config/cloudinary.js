@@ -102,7 +102,7 @@ const avatarStorage = new CloudinaryStorage({
 const uploadVideo = multer({ 
   storage: videoStorage,
   limits: {
-    fileSize: parseInt(process.env.MAX_VIDEO_SIZE) || 50 * 1024 * 1024, // 50MB default
+    fileSize: parseInt(process.env.MAX_VIDEO_SIZE) || 350 * 1024 * 1024, // 350MB default
   },
   fileFilter: (req, file, cb) => {
     if (file.fieldname === 'video') {
@@ -149,7 +149,7 @@ const uploadAvatar = multer({
 const uploadReel = multer({
   storage: multer.memoryStorage(), // We'll handle storage per field
   limits: {
-    fileSize: parseInt(process.env.MAX_VIDEO_SIZE) || 50 * 1024 * 1024,
+    fileSize: parseInt(process.env.MAX_VIDEO_SIZE) || 350 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
     if (file.fieldname === 'video') {
@@ -181,10 +181,22 @@ const uploadToCloudinary = async (buffer, resourceType = 'video', folder = 'shor
         resource_type: resourceType,
         folder: folder,
         quality: 'auto:good',
-        fetch_format: 'auto'
+        fetch_format: 'auto',
+        chunk_size: 6000000, // 6MB chunks for large files
+        timeout: 120000, // 2 minutes timeout
+        eager_async: true, // Process transformations asynchronously
+        // For large video files
+        ...(resourceType === 'video' && buffer.length > 100 * 1024 * 1024 && {
+          quality: 'auto:low', // Lower quality for very large files
+          bit_rate: '1m', // Limit bitrate to 1Mbps
+          width: 720, // Limit resolution
+          height: 1280,
+          crop: 'limit'
+        })
       },
       (error, result) => {
         if (error) {
+          console.error('Cloudinary upload error:', error);
           reject(error);
         } else {
           resolve(result);
